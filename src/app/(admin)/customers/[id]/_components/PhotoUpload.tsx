@@ -1,59 +1,102 @@
 "use client"
 
 import { useState, useRef } from "react"
+import imageCompression from "browser-image-compression"
+import { uploadPhoto, deletePhoto, updateCustomerPhotos } from "@/lib/data/storage"
 
-interface Photo {
-  url: string
-  pending?: boolean
-}
+type PhotoType = "site" | "product" | "payment"
 
 interface Props {
+  customerId: string
+  type: PhotoType
   initialPhotos?: string[]
 }
 
-export function PhotoUpload({ initialPhotos = [] }: Props) {
-  const [photos, setPhotos] = useState<Photo[]>(
-    initialPhotos.map((url) => ({ url }))
-  )
+export function PhotoUpload({ customerId, type, initialPhotos = [] }: Props) {
+  const [photos, setPhotos] = useState<string[]>(initialPhotos)
+  const [expanded, setExpanded] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [lightbox, setLightbox] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  function handleFiles(files: FileList | null) {
-    if (!files) return
-    const previews: Photo[] = Array.from(files).map((file) => ({
-      url: URL.createObjectURL(file),
-      pending: true,
-    }))
-    setPhotos((prev) => [...prev, ...previews])
-    // TODO: upload to R2, replace pending urls with real urls
+  async function handleFiles(files: FileList | null) {
+    if (!files || files.length === 0) return
+    setUploading(true)
+
+    try {
+      const newUrls: string[] = []
+
+      for (const file of Array.from(files)) {
+        const compressed = await imageCompression(file, {
+          maxSizeMB: 0.5,
+          maxWidthOrHeight: 1280,
+          useWebWorker: true,
+          fileType: "image/webp",
+        })
+
+        const fd = new FormData()
+        fd.append("file", compressed)
+        const url = await uploadPhoto(fd, `customers/${customerId}/${type}`)
+        newUrls.push(url)
+      }
+
+      const updated = [...photos, ...newUrls]
+      setPhotos(updated)
+      setExpanded(true)
+      await updateCustomerPhotos(customerId, type, updated)
+    } finally {
+      setUploading(false)
+    }
   }
 
-  function remove(index: number) {
-    setPhotos((prev) => prev.filter((_, i) => i !== index))
+  async function handleRemove(url: string) {
+    if (!confirm("ลบรูปนี้?")) return
+    const updated = photos.filter((p) => p !== url)
+    try {
+      await Promise.all([
+        deletePhoto(url),
+        updateCustomerPhotos(customerId, type, updated),
+      ])
+      setPhotos(updated)
+    } catch {
+      alert("ลบไม่สำเร็จ กรุณาลองใหม่")
+    }
+  }
+
+  if (!expanded && photos.length > 0) {
+    return (
+      <button
+        onClick={() => setExpanded(true)}
+        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors text-sm text-gray-600"
+      >
+        <span>🖼️</span>
+        <span>มี {photos.length} รูป — กดเพื่อแสดง</span>
+      </button>
+    )
   }
 
   return (
     <div className="space-y-3">
+      {expanded && photos.length > 0 && (
+        <button
+          onClick={() => setExpanded(false)}
+          className="text-xs text-gray-400 hover:text-gray-600 underline"
+        >
+          ซ่อนรูป
+        </button>
+      )}
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-        {photos.map((photo, i) => (
-          <div
-            key={i}
-            className="relative aspect-square rounded-xl overflow-hidden bg-gray-100"
-          >
+        {photos.map((url) => (
+          <div key={url} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
             <img
-              src={photo.url}
+              src={url}
               alt=""
               className="w-full h-full object-cover cursor-pointer"
-              onClick={() => setLightbox(photo.url)}
+              onClick={() => setLightbox(url)}
             />
-            {photo.pending && (
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                <span className="text-white text-xs font-medium">รอบันทึก</span>
-              </div>
-            )}
             <button
               type="button"
-              onClick={() => remove(i)}
+              onClick={() => handleRemove(url)}
               className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center text-sm leading-none transition-colors"
             >
               ×
@@ -64,10 +107,19 @@ export function PhotoUpload({ initialPhotos = [] }: Props) {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="aspect-square rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-gray-400 hover:text-gray-500 transition-colors active:bg-gray-50"
+          disabled={uploading}
+          className="aspect-square rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-gray-400 hover:text-gray-500 transition-colors disabled:opacity-50"
         >
-          <span className="text-2xl">📷</span>
-          <span className="text-xs">เพิ่มรูป</span>
+          {uploading ? (
+            <>
+              <span className="text-xs">กำลังอัปโหลด...</span>
+            </>
+          ) : (
+            <>
+              <span className="text-2xl">📷</span>
+              <span className="text-xs">เพิ่มรูป</span>
+            </>
+          )}
         </button>
       </div>
 
@@ -80,7 +132,6 @@ export function PhotoUpload({ initialPhotos = [] }: Props) {
         multiple
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
-        // reset value so same file can be re-selected
         onClick={(e) => ((e.target as HTMLInputElement).value = "")}
       />
 

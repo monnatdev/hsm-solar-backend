@@ -77,19 +77,19 @@ export default async function CustomerDetailPage({
       {/* รูปภาพหน้างาน */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
         <h2 className="font-semibold text-sm text-gray-500 uppercase tracking-wider">รูปภาพหน้างาน</h2>
-        <PhotoUpload initialPhotos={customer.site_photos ?? []} />
+        <PhotoUpload customerId={customer.id} type="site" initialPhotos={customer.site_photos ?? []} />
       </div>
 
       {/* รูปภาพสินค้า */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
         <h2 className="font-semibold text-sm text-gray-500 uppercase tracking-wider">รูปภาพสินค้า</h2>
-        <PhotoUpload initialPhotos={customer.product_photos ?? []} />
+        <PhotoUpload customerId={customer.id} type="product" initialPhotos={customer.product_photos ?? []} />
       </div>
 
       {/* สลิป / ใบเสร็จ */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
         <h2 className="font-semibold text-sm text-gray-500 uppercase tracking-wider">สลิป / ใบเสร็จ</h2>
-        <PhotoUpload initialPhotos={customer.payment_photos ?? []} />
+        <PhotoUpload customerId={customer.id} type="payment" initialPhotos={customer.payment_photos ?? []} />
       </div>
 
       {/* นัดล้างแผง */}
