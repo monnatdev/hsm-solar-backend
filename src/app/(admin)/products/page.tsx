@@ -1,4 +1,4 @@
-import { getBrands, getProducts } from "@/lib/data/products"
+import { getProducts } from "@/lib/data/products"
 import { PRODUCT_CATEGORY_LABELS, type ProductCategory } from "@/lib/supabase/types"
 import { AddProductButton } from "./_components/AddProductButton"
 import { DeleteProductButton } from "./_components/DeleteProductButton"
@@ -18,10 +18,7 @@ export default async function ProductsPage({
   searchParams: Promise<{ category?: string }>
 }) {
   const { category } = await searchParams
-  const [products, brands] = await Promise.all([
-    getProducts(category as ProductCategory | undefined),
-    getBrands(),
-  ])
+  const products = await getProducts(category as ProductCategory | undefined)
 
   const grouped = products.reduce<Partial<Record<ProductCategory, typeof products>>>(
     (acc, p) => {
@@ -43,7 +40,7 @@ export default async function ProductsPage({
           <h1 className="text-xl font-bold">สินค้า</h1>
           <p className="text-sm text-gray-500 mt-0.5">{products.length} รายการ</p>
         </div>
-        <AddProductButton brands={brands} />
+        <AddProductButton />
       </div>
 
       {/* Category filter */}
@@ -92,14 +89,6 @@ export default async function ProductsPage({
                   >
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm">{p.name}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {p.brand && <span>{p.brand}</span>}
-                        {p.brand && p.sku && <span className="mx-1">·</span>}
-                        {p.sku && <span className="font-mono">{p.sku}</span>}
-                      </p>
-                      {p.description && (
-                        <p className="text-xs text-gray-400 mt-1 line-clamp-2">{p.description}</p>
-                      )}
                     </div>
                     <p className="shrink-0 text-sm font-semibold">
                       {p.unit_price.toLocaleString("th-TH")}

@@ -28,7 +28,8 @@ export async function uploadPhoto(formData: FormData, folder: string): Promise<s
 }
 
 export async function deletePhoto(url: string): Promise<void> {
-  const publicUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL!
+  const publicUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL
+  if (!publicUrl) throw new Error("R2 public URL not configured")
   if (!url.startsWith(publicUrl)) throw new Error("Invalid photo URL")
   const key = url.slice(publicUrl.length + 1)
 

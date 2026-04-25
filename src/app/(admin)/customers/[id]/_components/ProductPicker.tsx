@@ -17,7 +17,7 @@ export function ProductPicker({ products, selected = [], onChange }: Props) {
     if (selected.find((s) => s.product_id === p.id)) return
     onChange([
       ...selected,
-      { product_id: p.id, name: p.name, brand: p.brand, category: p.category, quantity: 1, unit_price: p.unit_price },
+      { product_id: p.id, name: p.name, brand: p.brand ?? "", category: p.category, quantity: 1, unit_price: p.unit_price },
     ])
     setOpen(false)
     setSearch("")
@@ -35,8 +35,8 @@ export function ProductPicker({ products, selected = [], onChange }: Props) {
     (p) =>
       !search ||
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.brand.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku.toLowerCase().includes(search.toLowerCase())
+      p.brand?.toLowerCase().includes(search.toLowerCase()) ||
+      p.sku?.toLowerCase().includes(search.toLowerCase())
   )
 
   const alreadySelected = new Set(selected.map((s) => s.product_id))

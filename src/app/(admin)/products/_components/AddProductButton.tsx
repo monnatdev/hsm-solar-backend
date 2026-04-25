@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,52 +12,7 @@ const CATEGORIES = Object.entries(PRODUCT_CATEGORY_LABELS) as [ProductCategory, 
 
 type FieldErrors = Partial<Record<string, string>>
 
-function BrandCombobox({ brands, error }: { brands: string[]; error?: string }) {
-  const [value, setValue] = useState("")
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  const filtered = brands.filter(
-    (b) => b.toLowerCase().includes(value.toLowerCase()) && b !== value
-  )
-
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
-  }, [])
-
-  return (
-    <div className="relative" ref={ref}>
-      <input type="hidden" name="brand" value={value} />
-      <Input
-        value={value}
-        onChange={(e) => { setValue(e.target.value); setOpen(true) }}
-        onFocus={() => setOpen(true)}
-        placeholder="เช่น Jinko, Huawei, BYD"
-        autoComplete="off"
-        className={error ? "border-red-400" : ""}
-      />
-      {open && filtered.length > 0 && (
-        <ul className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto text-sm">
-          {filtered.map((b) => (
-            <li
-              key={b}
-              onMouseDown={() => { setValue(b); setOpen(false) }}
-              className="px-3 py-2 hover:bg-gray-50 cursor-pointer"
-            >
-              {b}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
-}
-
-export function AddProductButton({ brands = [] }: { brands?: string[] }) {
+export function AddProductButton({ brands: _brands = [] }: { brands?: string[] }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<FieldErrors>({})
@@ -111,26 +66,9 @@ export function AddProductButton({ brands = [] }: { brands?: string[] }) {
             {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
           </div>
           <div className="space-y-1.5">
-            <Label>แบรนด์</Label>
-            <BrandCombobox brands={brands} error={errors.brand} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>รหัสสินค้า (SKU)</Label>
-            <Input name="sku" placeholder="เช่น JKM580N-7RL4" />
-          </div>
-          <div className="space-y-1.5">
             <Label>ราคาต่อหน่วย (บาท) <span className="text-red-500">*</span></Label>
             <Input name="unit_price" type="number" min="0" step="0.01" placeholder="0.00" />
             {errors.unit_price && <p className="text-xs text-red-500">{errors.unit_price}</p>}
-          </div>
-          <div className="space-y-1.5">
-            <Label>รายละเอียดเพิ่มเติม</Label>
-            <textarea
-              name="description"
-              rows={3}
-              className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
-              placeholder="สเปก หรือข้อมูลอื่นๆ"
-            />
           </div>
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={() => { setOpen(false); setErrors({}) }}>

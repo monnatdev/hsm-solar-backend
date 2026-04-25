@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
-import type { Customer, CustomerStatus, Survey, Installation, PanelCleaning, CleaningScheduleItem } from "@/lib/supabase/types"
+import type { Customer, CustomerStatus, Survey, Installation, PanelCleaning, CleaningScheduleItem, PurchaseItem } from "@/lib/supabase/types"
 
 export async function getStatusCounts(): Promise<Partial<Record<CustomerStatus, number>>> {
   const supabase = await createClient()
@@ -246,6 +246,162 @@ export async function deletePanelCleaning(customerId: string, cleaningId: string
   const { error } = await supabase
     .from("customers")
     .update({ panel_cleanings, updated_at: new Date().toISOString() })
+    .eq("id", customerId)
+
+  if (error) throw new Error(error.message)
+  revalidatePath(`/customers/${customerId}`)
+}
+
+type PurchasePhotoSlot = "purchase_slip" | "reimbursement_slip"
+
+function validatePurchaseItemFields(item: { product_name?: string; quantity?: number; unit_price?: number; product_url?: string }) {
+  if (!item.product_name?.trim()) throw new Error("product_name required")
+  if (!Number.isFinite(item.quantity) || (item.quantity ?? 0) <= 0) throw new Error("quantity must be > 0")
+  if (!Number.isFinite(item.unit_price) || (item.unit_price ?? -1) < 0) throw new Error("unit_price must be >= 0")
+  if (item.product_url) {
+    try {
+      const u = new URL(item.product_url)
+      if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error()
+    } catch {
+      throw new Error("product_url must be a valid http/https URL")
+    }
+  }
+}
+
+export async function addPurchaseItem(
+  customerId: string,
+  item: Omit<PurchaseItem, "id" | "purchase_slip_photos" | "reimbursement_slip_photos">
+): Promise<PurchaseItem> {
+  validatePurchaseItemFields(item)
+  const supabase = await createClient()
+
+  const { data: row } = await supabase
+    .from("customers")
+    .select("purchase_items")
+    .eq("id", customerId)
+    .single()
+
+  const newItem: PurchaseItem = {
+    ...item,
+    id: crypto.randomUUID(),
+    purchase_slip_photos: [],
+    reimbursement_slip_photos: [],
+  }
+  const purchase_items = [...(row?.purchase_items ?? []), newItem]
+
+  const { error } = await supabase
+    .from("customers")
+    .update({ purchase_items, updated_at: new Date().toISOString() })
+    .eq("id", customerId)
+
+  if (error) throw new Error(error.message)
+  revalidatePath(`/customers/${customerId}`)
+  return newItem
+}
+
+export async function updatePurchaseItem(
+  customerId: string,
+  itemId: string,
+  updates: Omit<PurchaseItem, "id" | "purchase_slip_photos" | "reimbursement_slip_photos">
+) {
+  validatePurchaseItemFields(updates)
+  const supabase = await createClient()
+
+  const { data: row } = await supabase
+    .from("customers")
+    .select("purchase_items")
+    .eq("id", customerId)
+    .single()
+
+  const purchase_items = (row?.purchase_items ?? []).map((i: PurchaseItem) =>
+    i.id === itemId ? { ...i, ...updates } : i
+  )
+
+  const { error } = await supabase
+    .from("customers")
+    .update({ purchase_items, updated_at: new Date().toISOString() })
+    .eq("id", customerId)
+
+  if (error) throw new Error(error.message)
+  revalidatePath(`/customers/${customerId}`)
+}
+
+export async function deletePurchaseItem(customerId: string, itemId: string) {
+  const supabase = await createClient()
+
+  const { data: row } = await supabase
+    .from("customers")
+    .select("purchase_items")
+    .eq("id", customerId)
+    .single()
+
+  const purchase_items = (row?.purchase_items ?? []).filter(
+    (i: PurchaseItem) => i.id !== itemId
+  )
+
+  const { error } = await supabase
+    .from("customers")
+    .update({ purchase_items, updated_at: new Date().toISOString() })
+    .eq("id", customerId)
+
+  if (error) throw new Error(error.message)
+  revalidatePath(`/customers/${customerId}`)
+}
+
+export async function addPurchaseItemPhoto(
+  customerId: string,
+  itemId: string,
+  slot: PurchasePhotoSlot,
+  url: string
+) {
+  if (slot !== "purchase_slip" && slot !== "reimbursement_slip") throw new Error("Invalid slot")
+  const supabase = await createClient()
+
+  const { data: row } = await supabase
+    .from("customers")
+    .select("purchase_items")
+    .eq("id", customerId)
+    .single()
+
+  const field = slot === "purchase_slip" ? "purchase_slip_photos" : "reimbursement_slip_photos"
+  const purchase_items = (row?.purchase_items ?? []).map((i: PurchaseItem) =>
+    i.id === itemId ? { ...i, [field]: [...(i[field] ?? []), url] } : i
+  )
+
+  const { error } = await supabase
+    .from("customers")
+    .update({ purchase_items, updated_at: new Date().toISOString() })
+    .eq("id", customerId)
+
+  if (error) throw new Error(error.message)
+  revalidatePath(`/customers/${customerId}`)
+}
+
+export async function removePurchaseItemPhoto(
+  customerId: string,
+  itemId: string,
+  slot: PurchasePhotoSlot,
+  url: string
+) {
+  if (slot !== "purchase_slip" && slot !== "reimbursement_slip") throw new Error("Invalid slot")
+  const supabase = await createClient()
+
+  const { data: row } = await supabase
+    .from("customers")
+    .select("purchase_items")
+    .eq("id", customerId)
+    .single()
+
+  const field = slot === "purchase_slip" ? "purchase_slip_photos" : "reimbursement_slip_photos"
+  const purchase_items = (row?.purchase_items ?? []).map((i: PurchaseItem) =>
+    i.id === itemId
+      ? { ...i, [field]: (i[field] ?? []).filter((p: string) => p !== url) }
+      : i
+  )
+
+  const { error } = await supabase
+    .from("customers")
+    .update({ purchase_items, updated_at: new Date().toISOString() })
     .eq("id", customerId)
 
   if (error) throw new Error(error.message)

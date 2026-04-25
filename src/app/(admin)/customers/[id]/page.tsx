@@ -10,6 +10,7 @@ import { SurveyForm } from "./_components/SurveyForm"
 import { InstallationForm } from "./_components/InstallationForm"
 import { PhotoUpload } from "./_components/PhotoUpload"
 import { CleaningScheduleForm } from "./_components/CleaningScheduleForm"
+import { PurchaseItemsSection } from "./_components/PurchaseItemsSection"
 import Link from "next/link"
 
 export default async function CustomerDetailPage({
@@ -72,6 +73,12 @@ export default async function CustomerDetailPage({
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
         <h2 className="font-semibold text-sm text-gray-500 uppercase tracking-wider">รายละเอียดการติดตั้ง</h2>
         <InstallationForm customerId={customer.id} initialData={customer.installation} allProducts={allProducts} employees={employees} surveyLocation={customer.survey?.location} />
+      </div>
+
+      {/* รายการสินค้าที่ใช้ */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
+        <h2 className="font-semibold text-sm text-gray-500 uppercase tracking-wider">รายการสินค้าที่ใช้</h2>
+        <PurchaseItemsSection customerId={customer.id} initialItems={customer.purchase_items ?? []} products={allProducts} />
       </div>
 
       {/* รูปภาพหน้างาน */}

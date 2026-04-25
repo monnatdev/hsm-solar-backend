@@ -71,6 +71,32 @@ export interface PanelCleaning {
   created_at: string
 }
 
+export type PurchaseSource = "shopee" | "lazada" | "facebook" | "contractor" | "other"
+
+export const PURCHASE_SOURCE_LABELS: Record<PurchaseSource, string> = {
+  shopee: "Shopee",
+  lazada: "Lazada",
+  facebook: "Facebook",
+  contractor: "ผู้รับเหมา",
+  other: "อื่นๆ",
+}
+
+export interface PurchaseItem {
+  id: string
+  product_name: string
+  quantity: number
+  unit_price: number
+  source: PurchaseSource
+  store_name?: string
+  product_url?: string
+  warranty_years?: number
+  warranty_by?: string
+  purchase_slip_photos?: string[]
+  reimbursement_status: "pending" | "reimbursed"
+  reimbursement_slip_photos?: string[]
+  notes?: string
+}
+
 export type SystemType = "on_grid" | "hybrid" | "off_grid"
 
 export type ProductCategory = "solar_panel" | "battery" | "inverter" | "cable"
@@ -87,11 +113,11 @@ export interface Product {
   created_at: string
   updated_at: string
   name: string
-  brand: string
-  sku: string
+  brand?: string
+  sku?: string
   category: ProductCategory
   unit_price: number
-  description: string
+  description?: string
 }
 
 export interface InstallationProduct {
@@ -150,4 +176,5 @@ export interface Customer {
   payment_photos?: string[]
   panel_cleanings?: PanelCleaning[]
   cleaning_schedules?: CleaningScheduleItem[]
+  purchase_items?: PurchaseItem[]
 }
