@@ -6,7 +6,6 @@ import { logout } from "@/lib/data/auth"
 
 const navItems = [
   { href: "/customers", label: "ลูกค้า", icon: "👥" },
-  { href: "/quotes", label: "ใบเสนอราคา", icon: "📄" },
   { href: "/products", label: "สินค้า", icon: "📦" },
   { href: "/employees", label: "พนักงาน", icon: "👤" },
 ]

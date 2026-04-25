@@ -13,7 +13,7 @@ export async function login(formData: FormData) {
 
   if (error) return { error: "อีเมลหรือรหัสผ่านไม่ถูกต้อง" }
 
-  return { success: true }
+  return { success: true as const }
 }
 
 export async function logout() {

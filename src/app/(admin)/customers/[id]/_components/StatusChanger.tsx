@@ -6,7 +6,7 @@ import { CustomerStatus, STATUS_LABELS } from "@/lib/supabase/types"
 
 const ALL_STATUSES: CustomerStatus[] = [
   "new", "talking", "need_quote", "quoted",
-  "surveyed", "installed", "closed",
+  "surveyed", "waiting_for_stock", "installed", "cleaning_done", "closed",
 ]
 
 interface Props {

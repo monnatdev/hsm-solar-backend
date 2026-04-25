@@ -5,22 +5,31 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { createEmployee } from "@/lib/data/employees"
+import { EmployeeSchema } from "@/lib/validations/schemas"
+
+type FieldErrors = Partial<Record<string, string>>
 
 export function AddEmployeeButton() {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<FieldErrors>({})
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
-    setLoading(true)
     const fd = new FormData(e.currentTarget)
-    await createEmployee({
-      first_name: fd.get("first_name") as string,
-      last_name: fd.get("last_name") as string,
-      age: fd.get("age") ? parseInt(fd.get("age") as string, 10) : null,
-      phone: fd.get("phone") as string,
-      position: fd.get("position") as string,
-    })
+    const result = EmployeeSchema.safeParse(Object.fromEntries(fd))
+
+    if (!result.success) {
+      const fieldErrors = result.error.flatten().fieldErrors
+      setErrors(Object.fromEntries(
+        Object.entries(fieldErrors).map(([k, v]) => [k, v?.[0] ?? ""])
+      ))
+      return
+    }
+
+    setErrors({})
+    setLoading(true)
+    await createEmployee(result.data)
     setOpen(false)
     setLoading(false)
   }
@@ -37,29 +46,34 @@ export function AddEmployeeButton() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>ชื่อ <span className="text-red-500">*</span></Label>
-              <Input name="first_name" required placeholder="ชื่อ" />
+              <Input name="first_name" placeholder="ชื่อ" />
+              {errors.first_name && <p className="text-xs text-red-500">{errors.first_name}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>นามสกุล <span className="text-red-500">*</span></Label>
-              <Input name="last_name" required placeholder="นามสกุล" />
+              <Input name="last_name" placeholder="นามสกุล" />
+              {errors.last_name && <p className="text-xs text-red-500">{errors.last_name}</p>}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>อายุ</Label>
               <Input name="age" type="number" min="18" max="99" placeholder="25" />
+              {errors.age && <p className="text-xs text-red-500">{errors.age}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>เบอร์ติดต่อ <span className="text-red-500">*</span></Label>
-              <Input name="phone" type="tel" required placeholder="0812345678" />
+              <Input name="phone" type="tel" placeholder="0812345678" />
+              {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
             </div>
           </div>
           <div className="space-y-1.5">
             <Label>ตำแหน่ง <span className="text-red-500">*</span></Label>
-            <Input name="position" required placeholder="เช่น ช่างติดตั้ง, หัวหน้าทีม" />
+            <Input name="position" placeholder="เช่น ช่างติดตั้ง, หัวหน้าทีม" />
+            {errors.position && <p className="text-xs text-red-500">{errors.position}</p>}
           </div>
           <div className="flex gap-3 pt-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" className="flex-1" onClick={() => { setOpen(false); setErrors({}) }}>
               ยกเลิก
             </Button>
             <Button type="submit" className="flex-1" disabled={loading}>

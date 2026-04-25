@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { addPanelCleaning, deletePanelCleaning } from "@/lib/data/customers"
-import { EmployeeMultiSelect } from "@/components/ui/EmployeeMultiSelect"
 import type { PanelCleaning, Employee } from "@/lib/supabase/types"
 
 interface Photo { url: string }
@@ -142,7 +141,7 @@ export function PanelCleaningSection({ customerId, cleanings, employees = [] }: 
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
     const date = fd.get("date") as string
-    if (!date || supervisor.length === 0) return
+    if (!date) return
     setLoading(true)
     await addPanelCleaning(customerId, {
       date,
@@ -176,20 +175,9 @@ export function PanelCleaningSection({ customerId, cleanings, employees = [] }: 
         <form onSubmit={handleSubmit} className="border border-gray-200 rounded-xl p-4 space-y-4 bg-gray-50">
           <p className="text-sm font-semibold">บันทึกการล้างแผงใหม่</p>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>วันที่ล้าง <span className="text-red-500">*</span></Label>
-              <Input type="date" name="date" required />
-            </div>
-            <div className="space-y-1.5">
-              <Label>ผู้ดูแล <span className="text-red-500">*</span></Label>
-              <EmployeeMultiSelect
-                employees={employees}
-                value={supervisor}
-                onChange={setSupervisor}
-                placeholder="-- เลือกผู้ดูแล --"
-              />
-            </div>
+          <div className="space-y-1.5">
+            <Label>วันที่ล้าง <span className="text-red-500">*</span></Label>
+            <Input type="date" name="date" required />
           </div>
 
           <div className="space-y-1.5">
@@ -225,7 +213,7 @@ export function PanelCleaningSection({ customerId, cleanings, employees = [] }: 
               onClick={() => { setShowForm(false); setSupervisor([]); setPhotos([]); setSlips([]) }}>
               ยกเลิก
             </Button>
-            <Button type="submit" size="sm" className="flex-1" disabled={loading || supervisor.length === 0}>
+            <Button type="submit" size="sm" className="flex-1" disabled={loading}>
               {loading ? "กำลังบันทึก..." : "บันทึก"}
             </Button>
           </div>

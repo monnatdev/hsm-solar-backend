@@ -5,6 +5,7 @@ export type CustomerStatus =
   | "quoted"
   | "survey_scheduled"
   | "surveyed"
+  | "waiting_for_stock"
   | "install_scheduled"
   | "installed"
   | "cleaning_scheduled"
@@ -18,6 +19,7 @@ export const STATUS_LABELS: Record<CustomerStatus, string> = {
   quoted: "ส่งใบเสนอราคาแล้ว",
   survey_scheduled: "นัดสำรวจแล้ว",
   surveyed: "สำรวจแล้ว",
+  waiting_for_stock: "รอของเข้า",
   install_scheduled: "นัดติดตั้งแล้ว",
   installed: "ติดตั้งเสร็จ",
   cleaning_scheduled: "นัดล้างแผง",
@@ -32,6 +34,7 @@ export const STATUS_COLORS: Record<CustomerStatus, string> = {
   quoted: "bg-purple-100 text-purple-700",
   survey_scheduled: "bg-cyan-100 text-cyan-700",
   surveyed: "bg-teal-100 text-teal-700",
+  waiting_for_stock: "bg-amber-100 text-amber-700",
   install_scheduled: "bg-indigo-100 text-indigo-700",
   installed: "bg-green-100 text-green-700",
   cleaning_scheduled: "bg-sky-100 text-sky-700",
@@ -47,6 +50,15 @@ export interface Employee {
   age?: number | null
   phone: string
   position: string
+}
+
+export interface CleaningScheduleItem {
+  id: string
+  date: string
+  supervisor?: string[]
+  photos?: string[]
+  slip_photos?: string[]
+  notes?: string
 }
 
 export interface PanelCleaning {
@@ -113,6 +125,7 @@ export interface Installation {
   size_kw: number
   phase: number
   system_type: SystemType
+  installer?: string[]
   products: InstallationProduct[]
   notes?: string
 }
@@ -136,5 +149,5 @@ export interface Customer {
   product_photos?: string[]
   payment_photos?: string[]
   panel_cleanings?: PanelCleaning[]
-  cleaning_schedule_date?: string
+  cleaning_schedules?: CleaningScheduleItem[]
 }

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
-import type { Customer, CustomerStatus, Survey, Installation, PanelCleaning } from "@/lib/supabase/types"
+import type { Customer, CustomerStatus, Survey, Installation, PanelCleaning, CleaningScheduleItem } from "@/lib/supabase/types"
 
 export async function getStatusCounts(): Promise<Partial<Record<CustomerStatus, number>>> {
   const supabase = await createClient()
@@ -20,7 +20,8 @@ const PAGE_SIZE = 20
 export async function getCustomers(
   status?: CustomerStatus,
   search?: string,
-  page = 1
+  page = 1,
+  date?: string
 ): Promise<{ customers: Customer[]; total: number }> {
   const supabase = await createClient()
   const from = (page - 1) * PAGE_SIZE
@@ -29,8 +30,21 @@ export async function getCustomers(
   let query = supabase
     .from("customers")
     .select("*", { count: "exact" })
-    .order("created_at", { ascending: false })
     .range(from, to)
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const q = query as any
+  if (status === "survey_scheduled") {
+    query = q.order("survey->>date", { ascending: true })
+    if (date) query = q.filter("survey->>date", "eq", date)
+  } else if (status === "install_scheduled") {
+    query = q.order("installation->>date", { ascending: true })
+    if (date) query = q.filter("installation->>date", "eq", date)
+  } else if (status === "cleaning_scheduled") {
+    query = query.order("cleaning_schedule_date", { ascending: false })
+  } else {
+    query = query.order("created_at", { ascending: false })
+  }
 
   if (status) query = query.eq("status", status)
   if (search) query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`)
@@ -139,21 +153,46 @@ export async function updateInstallation(id: string, installation: Installation)
   revalidatePath("/customers")
 }
 
-export async function updateCleaningSchedule(id: string, date: string) {
+export async function addCleaningScheduleItem(id: string, item: Omit<CleaningScheduleItem, "id">) {
   const supabase = await createClient()
   const now = new Date().toISOString()
 
-  const { data: current } = await supabase
+  const { data: row } = await supabase
     .from("customers")
-    .select("status_history")
+    .select("cleaning_schedules, status_history")
     .eq("id", id)
     .single()
 
-  const status_history = { ...(current?.status_history ?? {}), cleaning_scheduled: now }
+  const newItem: CleaningScheduleItem = { ...item, id: crypto.randomUUID() }
+  const cleaning_schedules = [...(row?.cleaning_schedules ?? []), newItem]
+  const status_history = { ...(row?.status_history ?? {}), cleaning_scheduled: now }
 
   const { error } = await supabase
     .from("customers")
-    .update({ cleaning_schedule_date: date, status: "cleaning_scheduled", status_history, updated_at: now })
+    .update({ cleaning_schedules, status: "cleaning_scheduled", status_history, updated_at: now })
+    .eq("id", id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath(`/customers/${id}`)
+  revalidatePath("/customers")
+}
+
+export async function deleteCleaningScheduleItem(id: string, scheduleId: string) {
+  const supabase = await createClient()
+
+  const { data: row } = await supabase
+    .from("customers")
+    .select("cleaning_schedules")
+    .eq("id", id)
+    .single()
+
+  const cleaning_schedules = (row?.cleaning_schedules ?? []).filter(
+    (s: CleaningScheduleItem) => s.id !== scheduleId
+  )
+
+  const { error } = await supabase
+    .from("customers")
+    .update({ cleaning_schedules, updated_at: new Date().toISOString() })
     .eq("id", id)
 
   if (error) throw new Error(error.message)

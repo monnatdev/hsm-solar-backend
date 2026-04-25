@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ThaiAddressInput } from "@/components/ui/ThaiAddressInput"
+import { EmployeeMultiSelect } from "@/components/ui/EmployeeMultiSelect"
 import { ProductPicker } from "./ProductPicker"
 import { updateInstallation } from "@/lib/data/customers"
-import type { Installation, Product, SystemType, ThaiLocation } from "@/lib/supabase/types"
+import type { Installation, Product, SystemType, ThaiLocation, Employee } from "@/lib/supabase/types"
 
 const SYSTEM_TYPES: { value: SystemType; label: string }[] = [
   { value: "on_grid", label: "On Grid" },
@@ -21,26 +22,36 @@ const EMPTY_LOCATION: ThaiLocation = { address: "", subdistrict: "", district: "
 const DEFAULT: Installation = {
   date: "", time: "", location: EMPTY_LOCATION,
   size_kw: 0, phase: 0, system_type: "on_grid",
+  installer: [],
   products: [],
   notes: "",
 }
 
 function isComplete(d: Installation) {
-  return !!(d.date && d.time && d.size_kw > 0 && d.phase > 0 && d.location.province)
+  return !!(d.date && d.time && d.size_kw > 0 && d.phase > 0 && d.location.province && (d.installer ?? []).length > 0)
 }
 
 export function InstallationForm({
   customerId,
   initialData,
   allProducts,
+  employees = [],
+  surveyLocation,
 }: {
   customerId: string
   initialData?: Installation | null
   allProducts: Product[]
+  employees?: Employee[]
+  surveyLocation?: ThaiLocation | null
 }) {
   const [data, setData] = useState<Installation>({
     ...DEFAULT,
     ...initialData,
+    installer: Array.isArray(initialData?.installer)
+      ? initialData.installer
+      : initialData?.installer
+        ? [initialData.installer as unknown as string]
+        : [],
     products: initialData?.products ?? [],
   })
   const [loading, setLoading] = useState(false)
@@ -73,10 +84,21 @@ export function InstallationForm({
         </div>
       </div>
 
-      <ThaiAddressInput
-        value={data.location}
-        onChange={(loc) => set("location", loc)}
-      />
+      <div className="space-y-2">
+        {surveyLocation?.province && (
+          <button
+            type="button"
+            onClick={() => set("location", { ...EMPTY_LOCATION, ...surveyLocation })}
+            className="text-xs text-blue-600 hover:text-blue-800 underline"
+          >
+            ใช้ที่อยู่เดียวกันกับนัดสำรวจหน้างาน
+          </button>
+        )}
+        <ThaiAddressInput
+          value={data.location}
+          onChange={(loc) => set("location", loc)}
+        />
+      </div>
 
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-1.5">
@@ -117,6 +139,16 @@ export function InstallationForm({
       </div>
 
       <div className="space-y-1.5">
+        <Label>ผู้ดูแลติดตั้ง <span className="text-red-500">*</span></Label>
+        <EmployeeMultiSelect
+          employees={employees}
+          value={data.installer ?? []}
+          onChange={(v) => set("installer", v)}
+          placeholder="-- เลือกผู้ดูแลติดตั้ง --"
+        />
+      </div>
+
+      <div className="space-y-1.5">
         <Label>สินค้าที่ใช้ในงาน</Label>
         <ProductPicker
           products={allProducts}
@@ -135,7 +167,7 @@ export function InstallationForm({
           {loading ? "กำลังบันทึก..." : "บันทึกการติดตั้ง"}
         </Button>
         {saved && <span className="text-sm text-green-600">บันทึกแล้ว ✓</span>}
-        {!isComplete(data) && <span className="text-xs text-gray-400">กรุณากรอกวันที่ เวลา ขนาดระบบ Phase และจังหวัด</span>}
+        {!isComplete(data) && <span className="text-xs text-gray-400">กรุณากรอกวันที่ เวลา ขนาดระบบ Phase จังหวัด และผู้ดูแลติดตั้ง</span>}
       </div>
     </form>
   )

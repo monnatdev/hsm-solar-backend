@@ -5,23 +5,31 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { createCustomer } from "@/lib/data/customers"
+import { CustomerSchema, CUSTOMER_SOURCES } from "@/lib/validations/schemas"
 
-const SOURCES = ["Web", "LINE", "Facebook", "Instagram", "แนะนำ", "อื่นๆ"]
+type FieldErrors = Partial<Record<string, string>>
 
 export function AddCustomerButton() {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<FieldErrors>({})
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
-    setLoading(true)
     const fd = new FormData(e.currentTarget)
-    await createCustomer({
-      name: fd.get("name") as string,
-      phone: fd.get("phone") as string || undefined,
-      email: fd.get("email") as string || undefined,
-      source: fd.get("source") as string || undefined,
-    })
+    const result = CustomerSchema.safeParse(Object.fromEntries(fd))
+
+    if (!result.success) {
+      const fieldErrors = result.error.flatten().fieldErrors
+      setErrors(Object.fromEntries(
+        Object.entries(fieldErrors).map(([k, v]) => [k, v?.[0] ?? ""])
+      ))
+      return
+    }
+
+    setErrors({})
+    setLoading(true)
+    await createCustomer(result.data)
     setOpen(false)
     setLoading(false)
   }
@@ -37,31 +45,35 @@ export function AddCustomerButton() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label>ชื่อ-นามสกุล *</Label>
-            <Input name="name" required />
+            <Input name="name" />
+            {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
           </div>
           <div className="space-y-1.5">
             <Label>เบอร์โทรศัพท์ *</Label>
-            <Input name="phone" type="tel" required />
+            <Input name="phone" type="tel" placeholder="081-234-5678" />
+            {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
           </div>
           <div className="space-y-1.5">
             <Label>อีเมล</Label>
             <Input name="email" type="email" />
+            {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
           </div>
           <div className="space-y-1.5">
             <Label>แหล่งที่มา *</Label>
             <select
               name="source"
-              required
+              defaultValue=""
               className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
             >
               <option value="" disabled>-- เลือกแหล่งที่มา --</option>
-              {SOURCES.map((s) => (
+              {CUSTOMER_SOURCES.map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
+            {errors.source && <p className="text-xs text-red-500">{errors.source}</p>}
           </div>
           <div className="flex gap-3 pt-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" className="flex-1" onClick={() => { setOpen(false); setErrors({}) }}>
               ยกเลิก
             </Button>
             <Button type="submit" className="flex-1" disabled={loading}>

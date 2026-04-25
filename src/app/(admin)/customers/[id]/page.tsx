@@ -9,7 +9,6 @@ import { NotesEditor } from "./_components/NotesEditor"
 import { SurveyForm } from "./_components/SurveyForm"
 import { InstallationForm } from "./_components/InstallationForm"
 import { PhotoUpload } from "./_components/PhotoUpload"
-import { PanelCleaningSection } from "./_components/PanelCleaningSection"
 import { CleaningScheduleForm } from "./_components/CleaningScheduleForm"
 import Link from "next/link"
 
@@ -72,7 +71,7 @@ export default async function CustomerDetailPage({
       {/* นัดติดตั้ง */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
         <h2 className="font-semibold text-sm text-gray-500 uppercase tracking-wider">รายละเอียดการติดตั้ง</h2>
-        <InstallationForm customerId={customer.id} initialData={customer.installation} allProducts={allProducts} />
+        <InstallationForm customerId={customer.id} initialData={customer.installation} allProducts={allProducts} employees={employees} surveyLocation={customer.survey?.location} />
       </div>
 
       {/* รูปภาพหน้างาน */}
@@ -96,14 +95,9 @@ export default async function CustomerDetailPage({
       {/* นัดล้างแผง */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
         <h2 className="font-semibold text-sm text-gray-500 uppercase tracking-wider">นัดล้างแผง</h2>
-        <CleaningScheduleForm customerId={customer.id} initialDate={customer.cleaning_schedule_date} />
+        <CleaningScheduleForm customerId={customer.id} schedules={customer.cleaning_schedules} employees={employees} />
       </div>
 
-      {/* ประวัติล้างแผง */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
-        <h2 className="font-semibold text-sm text-gray-500 uppercase tracking-wider">ประวัติล้างแผง</h2>
-        <PanelCleaningSection customerId={customer.id} cleanings={customer.panel_cleanings ?? []} employees={employees} />
-      </div>
     </div>
   )
 }
