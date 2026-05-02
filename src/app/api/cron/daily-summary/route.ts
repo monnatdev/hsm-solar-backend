@@ -1,7 +1,15 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
-import { STATUS_LABELS } from "@/lib/supabase/types"
 import type { CleaningScheduleItem } from "@/lib/supabase/types"
+import { STATUS_LABELS } from "@/lib/supabase/types"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
+import { NextResponse } from "next/server"
+
+function createServiceClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}
 
 const PIPELINE_STATUSES = ["new", "talking", "need_quote", "quoted", "surveyed", "waiting_for_stock"] as const
 
@@ -71,7 +79,11 @@ async function handler(req: Request) {
     }
   }
 
-  const supabase = await createClient()
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!serviceKey) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not set" }, { status: 500 })
+
+
+  const supabase = createServiceClient()
   const today = todayDateString()
 
   // Part 1: Pipeline — customers ที่ยังอยู่ในระหว่างดำเนินการ
@@ -145,7 +157,7 @@ async function handler(req: Request) {
 
   // Part 2
   lines.push("")
-  lines.push("📅 นัดที่กำลังจะมาถึง")
+  lines.push("🗓️ นัดที่กำลังจะมาถึง")
 
   if (appointments.length === 0) {
     lines.push("  ไม่มีนัดที่กำลังจะมาถึง")
