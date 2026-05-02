@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ThaiAddressInput } from "@/components/ui/ThaiAddressInput"
 import { EmployeeMultiSelect } from "@/components/ui/EmployeeMultiSelect"
-import { updateSurvey } from "@/lib/data/customers"
+import { ScheduleConflictWarning } from "@/components/ui/ScheduleConflictWarning"
+import { updateSurvey, checkScheduleConflicts } from "@/lib/data/customers"
+import type { ScheduleConflict } from "@/lib/data/customers"
 import type { Survey, ThaiLocation, Employee } from "@/lib/supabase/types"
 
 const EMPTY_LOCATION: ThaiLocation = { address: "", subdistrict: "", district: "", province: "", postal_code: "" }
@@ -33,6 +35,12 @@ export function SurveyForm({ customerId, initialData, employees = [] }: {
   }))
   const [loading, setLoading] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [conflicts, setConflicts] = useState<ScheduleConflict[]>([])
+
+  useEffect(() => {
+    if (!data.date) { setConflicts([]); return }
+    checkScheduleConflicts(data.date, customerId).then(setConflicts)
+  }, [data.date, customerId])
 
   function set<K extends keyof Survey>(key: K, value: Survey[K]) {
     setData((prev) => ({ ...prev, [key]: value }))
@@ -73,6 +81,8 @@ export function SurveyForm({ customerId, initialData, employees = [] }: {
           placeholder="-- เลือกผู้เข้าสำรวจ --"
         />
       </div>
+      <ScheduleConflictWarning conflicts={conflicts} />
+
       <div className="flex items-center gap-3">
         <Button type="submit" size="sm" disabled={loading || !isComplete(data)}>
           {loading ? "กำลังบันทึก..." : "บันทึกการนัด"}

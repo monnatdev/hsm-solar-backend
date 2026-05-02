@@ -39,12 +39,13 @@ export async function deletePhoto(url: string): Promise<void> {
   }))
 }
 
-type PhotoType = "site" | "product" | "payment"
+type PhotoType = "site" | "product" | "payment" | "serial_number"
 
 const PHOTO_FIELD: Record<PhotoType, string> = {
   site: "site_photos",
   product: "product_photos",
   payment: "payment_photos",
+  serial_number: "serial_number_photos",
 }
 
 export async function updateCustomerPhotos(id: string, type: PhotoType, urls: string[]) {

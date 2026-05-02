@@ -11,6 +11,7 @@ import { InstallationForm } from "./_components/InstallationForm"
 import { PhotoUpload } from "./_components/PhotoUpload"
 import { CleaningScheduleForm } from "./_components/CleaningScheduleForm"
 import { PurchaseItemsSection } from "./_components/PurchaseItemsSection"
+import { SerialNumberSection } from "./_components/SerialNumberSection"
 import Link from "next/link"
 
 export default async function CustomerDetailPage({
@@ -71,7 +72,7 @@ export default async function CustomerDetailPage({
 
       {/* นัดติดตั้ง */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
-        <h2 className="font-semibold text-sm text-gray-500 uppercase tracking-wider">รายละเอียดการติดตั้ง</h2>
+        <h2 className="font-semibold text-sm text-gray-500 uppercase tracking-wider">นัดติดตั้ง</h2>
         <InstallationForm customerId={customer.id} initialData={customer.installation} allProducts={allProducts} employees={employees} surveyLocation={customer.survey?.location} />
       </div>
 
@@ -91,6 +92,16 @@ export default async function CustomerDetailPage({
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
         <h2 className="font-semibold text-sm text-gray-500 uppercase tracking-wider">รูปภาพสินค้า</h2>
         <PhotoUpload customerId={customer.id} type="product" initialPhotos={customer.product_photos ?? []} />
+      </div>
+
+      {/* Serial Number */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
+        <h2 className="font-semibold text-sm text-gray-500 uppercase tracking-wider">Serial Number</h2>
+        <SerialNumberSection
+          customerId={customer.id}
+          initialPhotos={customer.serial_number_photos ?? []}
+          initialNotes={customer.serial_number_notes ?? ""}
+        />
       </div>
 
       {/* สลิป / ใบเสร็จ */}

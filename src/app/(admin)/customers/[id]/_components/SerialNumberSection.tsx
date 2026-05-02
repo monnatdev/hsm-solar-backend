@@ -1,0 +1,168 @@
+"use client"
+
+import { useState, useRef } from "react"
+import imageCompression from "browser-image-compression"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { uploadPhoto, deletePhoto, updateCustomerPhotos } from "@/lib/data/storage"
+import { updateSerialNumberNotes } from "@/lib/data/customers"
+
+interface Props {
+  customerId: string
+  initialPhotos?: string[]
+  initialNotes?: string
+}
+
+export function SerialNumberSection({ customerId, initialPhotos = [], initialNotes = "" }: Props) {
+  const [photos, setPhotos] = useState<string[]>(initialPhotos)
+  const [notes, setNotes] = useState(initialNotes)
+  const [uploading, setUploading] = useState(false)
+  const [savingNotes, setSavingNotes] = useState(false)
+  const [notesSaved, setNotesSaved] = useState(false)
+  const [lightbox, setLightbox] = useState<string | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  async function handleFiles(files: FileList | null) {
+    if (!files || files.length === 0) return
+    setUploading(true)
+    try {
+      const newUrls: string[] = []
+      for (const file of Array.from(files)) {
+        const compressed = await imageCompression(file, {
+          maxSizeMB: 0.5,
+          maxWidthOrHeight: 1280,
+          useWebWorker: true,
+          fileType: "image/webp",
+        })
+        const fd = new FormData()
+        fd.append("file", compressed)
+        const url = await uploadPhoto(fd, `customers/${customerId}/serial_number`)
+        newUrls.push(url)
+      }
+      const updated = [...photos, ...newUrls]
+      setPhotos(updated)
+      await updateCustomerPhotos(customerId, "serial_number", updated)
+    } catch {
+      alert("อัปโหลดไม่สำเร็จ กรุณาลองใหม่")
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  async function handleRemove(url: string) {
+    if (!confirm("ลบรูปนี้?")) return
+    const updated = photos.filter((p) => p !== url)
+    try {
+      await Promise.all([deletePhoto(url), updateCustomerPhotos(customerId, "serial_number", updated)])
+      setPhotos(updated)
+    } catch {
+      alert("ลบไม่สำเร็จ กรุณาลองใหม่")
+    }
+  }
+
+  async function handleSaveNotes() {
+    setSavingNotes(true)
+    try {
+      await updateSerialNumberNotes(customerId, notes)
+      setNotesSaved(true)
+      setTimeout(() => setNotesSaved(false), 2000)
+    } catch {
+      alert("บันทึกไม่สำเร็จ กรุณาลองใหม่")
+    } finally {
+      setSavingNotes(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Photo grid */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+        {photos.map((url) => (
+          <div key={url} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
+            <img
+              src={url}
+              alt=""
+              className="w-full h-full object-cover cursor-pointer"
+              onClick={() => setLightbox(url)}
+            />
+            <button
+              type="button"
+              onClick={() => handleRemove(url)}
+              className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center text-sm leading-none transition-colors"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="aspect-square rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-gray-400 hover:text-gray-500 transition-colors disabled:opacity-50"
+        >
+          {uploading ? (
+            <span className="text-xs">กำลังอัปโหลด...</span>
+          ) : (
+            <>
+              <span className="text-2xl">📷</span>
+              <span className="text-xs">เพิ่มรูป</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {photos.length > 0 && (
+        <p className="text-xs text-gray-400">{photos.length} รูป</p>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(e) => handleFiles(e.target.files)}
+        onClick={(e) => ((e.target as HTMLInputElement).value = "")}
+      />
+
+      {/* Notes */}
+      <div className="space-y-2">
+        <Label>หมายเหตุ</Label>
+        <Textarea
+          rows={3}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="เช่น หมายเลข S/N ของแต่ละแผง หรือรายละเอียดอื่นๆ"
+        />
+        <div className="flex items-center gap-3">
+          <Button type="button" size="sm" onClick={handleSaveNotes} disabled={savingNotes}>
+            {savingNotes ? "กำลังบันทึก..." : "บันทึกหมายเหตุ"}
+          </Button>
+          {notesSaved && <span className="text-sm text-green-600">บันทึกแล้ว ✓</span>}
+        </div>
+      </div>
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          onClick={() => setLightbox(null)}
+        >
+          <img
+            src={lightbox}
+            alt=""
+            className="max-w-full max-h-full rounded-xl object-contain"
+          />
+          <button
+            className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center text-xl transition-colors"
+            onClick={() => setLightbox(null)}
+          >
+            ×
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}

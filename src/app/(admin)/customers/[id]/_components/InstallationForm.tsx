@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,7 +8,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { ThaiAddressInput } from "@/components/ui/ThaiAddressInput"
 import { EmployeeMultiSelect } from "@/components/ui/EmployeeMultiSelect"
 import { ProductPicker } from "./ProductPicker"
-import { updateInstallation } from "@/lib/data/customers"
+import { ScheduleConflictWarning } from "@/components/ui/ScheduleConflictWarning"
+import { updateInstallation, checkScheduleConflicts } from "@/lib/data/customers"
+import type { ScheduleConflict } from "@/lib/data/customers"
 import type { Installation, Product, SystemType, ThaiLocation, Employee } from "@/lib/supabase/types"
 
 const SYSTEM_TYPES: { value: SystemType; label: string }[] = [
@@ -56,6 +58,12 @@ export function InstallationForm({
   })
   const [loading, setLoading] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [conflicts, setConflicts] = useState<ScheduleConflict[]>([])
+
+  useEffect(() => {
+    if (!data.date) { setConflicts([]); return }
+    checkScheduleConflicts(data.date, customerId).then(setConflicts)
+  }, [data.date, customerId])
 
   function set<K extends keyof Installation>(key: K, value: Installation[K]) {
     setData((prev) => ({ ...prev, [key]: value }))
@@ -161,6 +169,8 @@ export function InstallationForm({
         <Label>หมายเหตุ</Label>
         <Textarea value={data.notes} onChange={(e) => set("notes", e.target.value)} rows={3} />
       </div>
+
+      <ScheduleConflictWarning conflicts={conflicts} />
 
       <div className="flex items-center gap-3">
         <Button type="submit" size="sm" disabled={loading || !isComplete(data)}>

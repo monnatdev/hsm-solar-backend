@@ -1,12 +1,14 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Trash2, ChevronDown, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { EmployeeMultiSelect } from "@/components/ui/EmployeeMultiSelect"
-import { addCleaningScheduleItem, deleteCleaningScheduleItem } from "@/lib/data/customers"
+import { ScheduleConflictWarning } from "@/components/ui/ScheduleConflictWarning"
+import { addCleaningScheduleItem, deleteCleaningScheduleItem, checkScheduleConflicts } from "@/lib/data/customers"
+import type { ScheduleConflict } from "@/lib/data/customers"
 import type { CleaningScheduleItem, Employee } from "@/lib/supabase/types"
 
 interface Photo { url: string }
@@ -148,6 +150,12 @@ export function CleaningScheduleForm({ customerId, schedules = [], employees = [
   const [photos, setPhotos] = useState<Photo[]>([])
   const [slips, setSlips] = useState<Photo[]>([])
   const [loading, setLoading] = useState(false)
+  const [conflicts, setConflicts] = useState<ScheduleConflict[]>([])
+
+  useEffect(() => {
+    if (!date) { setConflicts([]); return }
+    checkScheduleConflicts(date, customerId).then(setConflicts)
+  }, [date, customerId])
 
   async function handleAdd(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -228,6 +236,8 @@ export function CleaningScheduleForm({ customerId, schedules = [], employees = [
               placeholder="รายละเอียดเพิ่มเติม"
             />
           </div>
+
+          <ScheduleConflictWarning conflicts={conflicts} />
 
           <div className="flex gap-3">
             <Button type="button" variant="outline" size="sm" className="flex-1"

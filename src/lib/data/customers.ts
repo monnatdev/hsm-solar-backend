@@ -408,6 +408,50 @@ export async function removePurchaseItemPhoto(
   revalidatePath(`/customers/${customerId}`)
 }
 
+export interface ScheduleConflict {
+  customerId: string
+  customerName: string
+  type: "survey" | "installation" | "cleaning"
+}
+
+export async function checkScheduleConflicts(date: string, excludeCustomerId: string): Promise<ScheduleConflict[]> {
+  if (!date) return []
+  const supabase = await createClient()
+  const conflicts: ScheduleConflict[] = []
+
+  // ดึง customers ทั้งหมด (ยกเว้น closed) รวมทั้ง current customer เพื่อเช็ค cross-type conflict
+  const { data: allCustomers } = await supabase
+    .from("customers")
+    .select("id, name, survey, installation, cleaning_schedules")
+    .neq("status", "closed")
+
+  for (const c of allCustomers ?? []) {
+    const isSelf = c.id === excludeCustomerId
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((c.survey as any)?.date === date && !isSelf)
+      conflicts.push({ customerId: c.id, customerName: c.name, type: "survey" })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((c.installation as any)?.date === date && !isSelf)
+      conflicts.push({ customerId: c.id, customerName: c.name, type: "installation" })
+    const hasCleaningDate = (c.cleaning_schedules ?? []).some((s: CleaningScheduleItem) => s.date === date)
+    if (hasCleaningDate && !isSelf)
+      conflicts.push({ customerId: c.id, customerName: c.name, type: "cleaning" })
+  }
+
+  return conflicts
+}
+
+export async function updateSerialNumberNotes(id: string, notes: string) {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from("customers")
+    .update({ serial_number_notes: notes, updated_at: new Date().toISOString() })
+    .eq("id", id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath(`/customers/${id}`)
+}
+
 export async function createCustomer(data: Pick<Customer, "name"> & Partial<Pick<Customer, "phone" | "email" | "address" | "source">>) {
   const supabase = await createClient()
   const { error } = await supabase

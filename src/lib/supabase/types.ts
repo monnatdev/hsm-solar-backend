@@ -174,6 +174,8 @@ export interface Customer {
   site_photos?: string[]
   product_photos?: string[]
   payment_photos?: string[]
+  serial_number_photos?: string[]
+  serial_number_notes?: string
   panel_cleanings?: PanelCleaning[]
   cleaning_schedules?: CleaningScheduleItem[]
   purchase_items?: PurchaseItem[]
