@@ -29,9 +29,14 @@ export function AddCustomerButton() {
 
     setErrors({})
     setLoading(true)
-    await createCustomer(result.data)
-    setOpen(false)
-    setLoading(false)
+    try {
+      await createCustomer(result.data)
+      setOpen(false)
+    } catch {
+      setErrors({ _form: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง" })
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (!open) {
@@ -72,6 +77,7 @@ export function AddCustomerButton() {
             </select>
             {errors.source && <p className="text-xs text-red-500">{errors.source}</p>}
           </div>
+          {errors._form && <p className="text-xs text-red-500">{errors._form}</p>}
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={() => { setOpen(false); setErrors({}) }}>
               ยกเลิก

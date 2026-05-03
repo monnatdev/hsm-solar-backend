@@ -162,7 +162,7 @@ export default async function CustomersPage({
           >
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm truncate">{c.name}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{c.phone}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{c.phone ?? "—"}</p>
               <ApptSubText c={c} />
             </div>
             <div className="flex flex-col items-end gap-1.5 shrink-0">
@@ -228,7 +228,7 @@ export default async function CustomersPage({
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{c.phone}</td>
+                  <td className="px-4 py-3 text-gray-600">{c.phone ?? "—"}</td>
                   <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
                   <td className="px-4 py-3 text-gray-500">
                     {apptDate
