@@ -11,7 +11,13 @@ export const CUSTOMER_SOURCES = ["Web", "LINE", "Facebook", "Instagram", "แน
 
 export const CustomerSchema = z.object({
   name: z.string().min(2, "ชื่อต้องมีอย่างน้อย 2 ตัวอักษร"),
-  phone: thaiPhone,
+  phone: z
+    .string()
+    .transform((v) => v.replace(/[\s\-()]/g, ""))
+    .refine((v) => v === "" || /^0[689]\d{8}$/.test(v), {
+      message: "เบอร์โทรไม่ถูกต้อง (เช่น 081-234-5678)",
+    })
+    .transform((v) => (v === "" ? undefined : v)),
   email: z.string().email("อีเมลไม่ถูกต้อง").or(z.literal("")).optional(),
   source: z.enum(CUSTOMER_SOURCES, { error: "กรุณาเลือกแหล่งที่มา" }),
 })

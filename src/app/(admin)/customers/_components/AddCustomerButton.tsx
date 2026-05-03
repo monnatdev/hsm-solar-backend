@@ -49,7 +49,7 @@ export function AddCustomerButton() {
             {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
           </div>
           <div className="space-y-1.5">
-            <Label>เบอร์โทรศัพท์ *</Label>
+            <Label>เบอร์โทรศัพท์</Label>
             <Input name="phone" type="tel" placeholder="081-234-5678" />
             {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
           </div>

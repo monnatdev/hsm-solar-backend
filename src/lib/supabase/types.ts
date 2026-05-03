@@ -161,7 +161,7 @@ export interface Customer {
   created_at: string
   updated_at: string
   name: string
-  phone: string
+  phone?: string | null
   email?: string
   address?: string
   source?: string
