@@ -109,7 +109,8 @@ export async function updateSurvey(id: string, survey: Survey) {
     .eq("id", id)
     .single()
 
-  const status_history = { ...(current?.status_history ?? {}), survey_scheduled: now }
+  const prev = current?.status_history ?? {}
+  const status_history = { ...prev, survey_scheduled: prev.survey_scheduled ?? now }
 
   const { error } = await supabase
     .from("customers")
@@ -136,7 +137,8 @@ export async function updateInstallation(id: string, installation: Installation)
     .eq("id", id)
     .single()
 
-  const status_history = { ...(current?.status_history ?? {}), install_scheduled: now }
+  const prev = current?.status_history ?? {}
+  const status_history = { ...prev, install_scheduled: prev.install_scheduled ?? now }
 
   const { error } = await supabase
     .from("customers")
@@ -165,7 +167,8 @@ export async function addCleaningScheduleItem(id: string, item: Omit<CleaningSch
 
   const newItem: CleaningScheduleItem = { ...item, id: crypto.randomUUID() }
   const cleaning_schedules = [...(row?.cleaning_schedules ?? []), newItem]
-  const status_history = { ...(row?.status_history ?? {}), cleaning_scheduled: now }
+  const prevH = row?.status_history ?? {}
+  const status_history = { ...prevH, cleaning_scheduled: prevH.cleaning_scheduled ?? now }
 
   const { error } = await supabase
     .from("customers")
