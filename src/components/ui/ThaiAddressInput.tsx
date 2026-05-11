@@ -4,11 +4,11 @@ import { useState, useRef, useEffect } from "react"
 import { Input } from "./input"
 import { Label } from "./label"
 import type { ThaiLocation } from "@/lib/supabase/types"
+import { resolveMapsUrl } from "@/lib/utils/maps"
 
-// Actual field names from thai-address-database package
 interface Entry {
-  district: string   // ตำบล/แขวง
-  amphoe: string     // อำเภอ/เขต
+  district: string
+  amphoe: string
   province: string
   zipcode: string
 }
@@ -22,6 +22,9 @@ export function ThaiAddressInput({ value, onChange }: Props) {
   const [query, setQuery] = useState("")
   const [suggestions, setSuggestions] = useState<Entry[]>([])
   const [open, setOpen] = useState(false)
+  const [mapsUrl, setMapsUrl] = useState("")
+  const [mapsLoading, setMapsLoading] = useState(false)
+  const [mapsError, setMapsError] = useState("")
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -72,12 +75,61 @@ export function ThaiAddressInput({ value, onChange }: Props) {
     setOpen(false)
   }
 
+  async function handleMapsUrl(url: string) {
+    setMapsUrl(url)
+    setMapsError("")
+    const isGoogleMaps = /maps\.app\.goo\.gl|maps\.google\.com|google\.com\/maps/.test(url)
+    if (!isGoogleMaps || url.length < 15) return
+
+    setMapsLoading(true)
+    try {
+      const result = await resolveMapsUrl(url)
+      if (result) {
+        onChange({
+          ...value,
+          ...(result.address ? { address: result.address } : {}),
+          subdistrict: result.subdistrict,
+          district: result.district,
+          province: result.province,
+          postal_code: result.postal_code,
+        })
+        setQuery(`${result.subdistrict} › ${result.district} › ${result.province} ${result.postal_code}`)
+        setMapsUrl("")
+      } else {
+        setMapsError("ไม่พบข้อมูลที่อยู่ กรุณากรอกเอง")
+      }
+    } catch {
+      setMapsError("เกิดข้อผิดพลาด กรุณาลองใหม่")
+    } finally {
+      setMapsLoading(false)
+    }
+  }
+
   const displayQuery = query || (value.subdistrict
     ? `${value.subdistrict} › ${value.district} › ${value.province} ${value.postal_code}`
     : "")
 
   return (
     <div className="space-y-3">
+      <div className="space-y-1.5">
+        <Label>วาง link Google Maps <span className="text-gray-400 font-normal text-xs">(auto-fill ที่อยู่)</span></Label>
+        <div className="relative">
+          <Input
+            value={mapsUrl}
+            onChange={(e) => handleMapsUrl(e.target.value)}
+            placeholder="https://maps.app.goo.gl/..."
+            className={mapsError ? "border-red-300" : ""}
+            disabled={mapsLoading}
+          />
+          {mapsLoading && (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+              กำลังค้นหา...
+            </span>
+          )}
+        </div>
+        {mapsError && <p className="text-xs text-red-500">{mapsError}</p>}
+      </div>
+
       <div className="space-y-1.5">
         <Label>ที่อยู่</Label>
         <Input
@@ -88,7 +140,7 @@ export function ThaiAddressInput({ value, onChange }: Props) {
       </div>
 
       <div className="space-y-1.5" ref={ref}>
-        <Label>ตำบล / อำเภอ / จังหวัด <span className="text-red-500">*</span></Label>
+        <Label>ตำบล / อำเภอ / จังหวัด</Label>
         <div className="relative">
           <Input
             value={displayQuery}
@@ -117,11 +169,11 @@ export function ThaiAddressInput({ value, onChange }: Props) {
       {value.subdistrict && (
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div className="space-y-1.5">
-            <Label>รหัสไปรษณีย์ <span className="text-red-500">*</span></Label>
+            <Label>รหัสไปรษณีย์</Label>
             <Input value={value.postal_code} onChange={(e) => onChange({ ...value, postal_code: e.target.value })} />
           </div>
           <div className="space-y-1.5">
-            <Label>จังหวัด <span className="text-red-500">*</span></Label>
+            <Label>จังหวัด</Label>
             <Input value={value.province} onChange={(e) => onChange({ ...value, province: e.target.value })} />
           </div>
         </div>

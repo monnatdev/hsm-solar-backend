@@ -30,7 +30,7 @@ const DEFAULT: Installation = {
 }
 
 function isComplete(d: Installation) {
-  return !!(d.date && d.time && d.size_kw > 0 && d.phase > 0 && d.location.province && (d.installer ?? []).length > 0)
+  return !!(d.date && d.time && d.size_kw > 0 && d.phase > 0)
 }
 
 export function InstallationForm({
@@ -147,7 +147,7 @@ export function InstallationForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label>ผู้ดูแลติดตั้ง <span className="text-red-500">*</span></Label>
+        <Label>ผู้ดูแลติดตั้ง</Label>
         <EmployeeMultiSelect
           employees={employees}
           value={data.installer ?? []}
@@ -177,7 +177,7 @@ export function InstallationForm({
           {loading ? "กำลังบันทึก..." : "บันทึกการติดตั้ง"}
         </Button>
         {saved && <span className="text-sm text-green-600">บันทึกแล้ว ✓</span>}
-        {!isComplete(data) && <span className="text-xs text-gray-400">กรุณากรอกวันที่ เวลา ขนาดระบบ Phase จังหวัด และผู้ดูแลติดตั้ง</span>}
+        {!isComplete(data) && <span className="text-xs text-gray-400">กรุณากรอกวันที่ เวลา ขนาดระบบ และ Phase</span>}
       </div>
     </form>
   )

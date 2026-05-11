@@ -16,7 +16,7 @@ const EMPTY_LOCATION: ThaiLocation = { address: "", subdistrict: "", district: "
 const DEFAULT: Survey = { date: "", time: "", location: EMPTY_LOCATION, surveyor: [] }
 
 function isComplete(d: Survey) {
-  return !!(d.date && d.time && d.surveyor.length > 0 && d.location.province && d.location.postal_code)
+  return !!(d.date && d.time)
 }
 
 export function SurveyForm({ customerId, initialData, employees = [] }: {
@@ -73,7 +73,7 @@ export function SurveyForm({ customerId, initialData, employees = [] }: {
         onChange={(loc) => set("location", loc)}
       />
       <div className="space-y-1.5">
-        <Label>ผู้เข้าสำรวจ <span className="text-red-500">*</span></Label>
+        <Label>ผู้เข้าสำรวจ</Label>
         <EmployeeMultiSelect
           employees={employees}
           value={data.surveyor}
@@ -88,7 +88,7 @@ export function SurveyForm({ customerId, initialData, employees = [] }: {
           {loading ? "กำลังบันทึก..." : "บันทึกการนัด"}
         </Button>
         {saved && <span className="text-sm text-green-600">บันทึกแล้ว ✓</span>}
-        {!isComplete(data) && <span className="text-xs text-gray-400">กรุณากรอกวันที่ เวลา รหัสไปรษณีย์ จังหวัด และผู้สำรวจ</span>}
+        {!isComplete(data) && <span className="text-xs text-gray-400">กรุณากรอกวันที่และเวลา</span>}
       </div>
     </form>
   )
